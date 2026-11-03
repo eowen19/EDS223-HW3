@@ -1,0 +1,19 @@
+```{r}
+library(sf)          # vector handling
+library(terra)       # raster handling
+library(tidyverse)
+library(tmap)        # map making
+library(elevatr)     # elevation data download
+library(tigris)      # US Census boundary data
+library(viridisLite)
+```
+
+```{r}
+average_sst_2008 <- rast('EDS223-HW3/data/data/average_annual_sst_2008.tif')
+average_sst_2009 <- rast('EDS223-HW3/data/data/average_annual_sst_2009.tif')
+average_sst_2010 <- rast('EDS223-HW3/data/data/average_annual_sst_2010.tif')
+average_sst_2011 <- rast('EDS223-HW3/data/data/average_annual_sst_2011.tif')
+average_sst_2012 <- rast('EDS223-HW3/data/data/average_annual_sst_2012.tif')
+depth <- rast('EDS223-HW3/data/data/depth.tif')
+regions <- st_read('EDS223-HW3/data/data/wc_regions_clean.shp')
+```
