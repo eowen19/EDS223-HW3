@@ -1,3 +1,5 @@
+
+
 ```{r}
 library(sf)          # vector handling
 library(terra)       # raster handling
@@ -6,6 +8,13 @@ library(tmap)        # map making
 library(elevatr)     # elevation data download
 library(tigris)      # US Census boundary data
 library(viridisLite)
+library(kableExtra) # table formatting
+library(spData) # spatial data
+library(spDataLarge) # spatial data
+library(geodata) # spatial data
+library(stars)
+
+
 ```
 
 ```{r}
@@ -16,4 +25,24 @@ average_sst_2011 <- rast('EDS223-HW3/data/data/average_annual_sst_2011.tif')
 average_sst_2012 <- rast('EDS223-HW3/data/data/average_annual_sst_2012.tif')
 depth <- rast('EDS223-HW3/data/data/depth.tif')
 regions <- st_read('EDS223-HW3/data/data/wc_regions_clean.shp')
+```
+
+```{r}
+same.crs(average_sst_2008, depth)
+same.crs(depth, regions)
+```
+
+```{r}
+average_sst_stack <- c(average_sst_2008, average_sst_2009, average_sst_2010, average_sst_2011, average_sst_2012)
+average_sst_stack
+```
+
+```{r}
+mean_sst <- mean(average_sst_stack, na.rm = TRUE)
+average_sst_c <- mean_sst - 273.15
+plot(average_sst_c)
+```
+
+```{r}
+
 ```
