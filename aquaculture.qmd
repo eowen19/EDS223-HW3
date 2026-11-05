@@ -68,5 +68,52 @@ stacked_depth_sst <- c(depth_resampl, average_sst_c)
 ```
 
 ```{r}
+rcl_temp <- matrix(c(-Inf, 11, 0, 
+                 11, 30, 1, 
+                 30, Inf, 0 ), 
+                 ncol = 3, byrow = TRUE
+                 ) 
+sst_rcl <- terra::classify(average_sst_c, rcl = rcl_temp)
 
+rcl_dep <- matrix(c(-Inf, -70, 0, 
+                 -70, 0, 1,
+                 0, Inf, 0), 
+                 ncol = 3, byrow = TRUE
+                 ) 
+depth_rcl <- terra::classify(depth_resampl, rcl = rcl_dep)
+
+combined <- c(sst_rcl, depth_rcl)
+
+suitable_zones <- lapp(combined, fun = function(SST,depth) SST * depth)
+```
+
+```{r}
+sf::st_crs(regions) <- terra::crs(suitable_zones)
+regions_rasterise <- rasterize(regions, suitable_zones, field = 'rgn_id')
+plot(regions_rasterise)
+
+cellsize <- cellSize(suitable_zones, unit ='km', mask = TRUE)
+
+suitable_zones_mask <- mask(cellsize, suitable_zones, maskvalues = 0)
+
+plot(suitable_zones_mask)
+
+zone <- zonal(suitable_zones_mask, regions_rasterise, fun = 'sum', na.rm=TRUE)
+
+zone_tibble <- as.tibble(zone)
+
+zone_map <- left_join(regions, zone_tibble, by = 'rgn_id')
+
+tm_shape(zone_map)+
+  tm_basemap('OpenStreetMap')+
+  tm_fill(
+    fill = 'area')
+```
+
+```{r}
+tm_shape(zone_map)+
+  tm_basemap('OpenStreetMap')+
+  tm_fill(
+    fill = 'area')+
+  tm_legend('Suitable Area (km)')
 ```
