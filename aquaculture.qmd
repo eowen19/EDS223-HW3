@@ -114,6 +114,9 @@ tm_shape(zone_map)+
 tm_shape(zone_map)+
   tm_basemap('OpenStreetMap')+
   tm_fill(
-    fill = 'area')+
-  tm_legend('Suitable Area (km)')
+    fill = 'area', 
+    fill.scale = tm_scale(), 
+    fill.legend = tm_legend(title = 'Suitable Area (km)', 
+    position = tm_pos_out('right')))+
+  tm_title('Suitable Areas for Oyster Development')
 ```
