@@ -13,8 +13,6 @@ library(spData) # spatial data
 library(spDataLarge) # spatial data
 library(geodata) # spatial data
 library(stars)
-
-
 ```
 
 ```{r}
@@ -32,6 +30,7 @@ same.crs(average_sst_2008, depth)
 same.crs(depth, regions)
 ```
 
+
 ```{r}
 average_sst_stack <- c(average_sst_2008, average_sst_2009, average_sst_2010, average_sst_2011, average_sst_2012)
 average_sst_stack
@@ -41,6 +40,31 @@ average_sst_stack
 mean_sst <- mean(average_sst_stack, na.rm = TRUE)
 average_sst_c <- mean_sst - 273.15
 plot(average_sst_c)
+plot(regions)
+plot(depth)
+```
+
+```{r}
+sst <- ext(-131.9848, -114.9867, 29.99305, 49.98842) 
+```
+
+```{r}
+depth_cropped <- crop(depth, sst)
+depth_resampl <- terra::resample(depth_cropped, y = average_sst_c, method = "bilinear")
+plot(depth_resampl)
+plot(average_sst_c)
+average_sst_c <- project(average_sst_c, crs(depth_resampl))
+```
+
+```{r}
+cat("\n=== Same CRS? ===\n")
+cat("west cost regions vs depth: ", same.crs(regions, depth_resampl), "\n")
+cat("west cost regions vs SST stack: ", same.crs(regions, average_sst_c), "\n")
+cat("depth vs SST stack: ", same.crs(depth_resampl, average_sst_c), "\n")
+```
+
+```{r}
+stacked_depth_sst <- c(depth_resampl, average_sst_c)
 ```
 
 ```{r}
