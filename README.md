@@ -19,6 +19,7 @@ A repo to house the work and assignment for HW3: Prioritising potential aquacult
                 wc_regions_clean.shx
             
     aquaculture.qmd
+    aquaculture.pdf
     
     
   
