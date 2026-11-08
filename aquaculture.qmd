@@ -1,4 +1,4 @@
-----
+---
 title: "EDS223 - Homework Assignment 3"
 subtitle: "Identifying Ideal Areas for Oyster and Shrimp Development"
 author: Elyse Owen
@@ -8,7 +8,7 @@ format:
     toc: true
     number-sections: true
     colorlinks: true
-----
+---
 This assignment looks at ocean depth and sea surface temperature to calculate the most appropriate zones to cultivate oysters and shrimp. The greater region of study is the Pacifc Coast of the United States, reaching from the Canadian border in the North to the Mexican border in the South. For the shrimp, the most suitable area for cultivation is off the coast of Oregon. For oysters, the most suitable area for cultivation is off the Central Coast of California. 
 
 # Load libraries
@@ -122,7 +122,7 @@ Species_Regions(minimum_sst = 11, maximum_sst = 30, minimum_depth = -70, maximum
 ```
 
 # Components of building the function
-## Create matrix of ideal temperature, depth for oyster development. Output produces suitable zoenes for oyster development. 
+## Create matrix of ideal temperature, depth for oyster development. Output produces suitable zones for oyster development. 
 ```{r}
 rcl_temp <- matrix(c(-Inf, 11, 0, 
                  11, 30, 1, 
@@ -148,13 +148,10 @@ suitable_zones <- lapp(combined, fun = function(SST,depth) SST * depth)
 ```{r}
 sf::st_crs(regions) <- terra::crs(suitable_zones)
 regions_rasterise <- rasterize(regions, suitable_zones, field = 'rgn_id')
-plot(regions_rasterise)
 
 suitable_cellsize <- cellSize(suitable_zones, unit ='km', mask = TRUE)
 
 suitable_zones_mask <- mask(suitable_cellsize, suitable_zones, maskvalues = 0)
-
-plot(suitable_zones_mask)
 
 zone <- zonal(suitable_zones_mask, regions_rasterise, fun = 'sum', na.rm=TRUE)
 
