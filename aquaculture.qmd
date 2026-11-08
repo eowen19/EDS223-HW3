@@ -1,5 +1,13 @@
 ----
-
+title: "EDS223 - Homework Assignment 3"
+subtitle: "Identifying Ideal Areas for Oyster and Shrimp Development"
+author: Elyse Owen
+date: 11/07/2026
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
 ----
 
 
@@ -30,6 +38,21 @@ depth <- rast('data/data/depth.tif')
 regions <- st_read('data/data/wc_regions_clean.shp')
 ```
 
+# Stack the average SST rasters together, calculate the mean, convert to from Kelvin to Celcius
+```{r}
+average_sst_stack <- c(average_sst_2008, average_sst_2009, average_sst_2010, average_sst_2011, average_sst_2012)
+mean_sst <- mean(average_sst_stack, na.rm = TRUE)
+average_sst_c <- mean_sst - 273.15
+```
+
+# Crop depth raster to the extent of the SST raster, resample to the depth raster. C
+```{r}
+sst <- ext(-131.9848, -114.9867, 29.99305, 49.98842) 
+depth_cropped <- crop(depth, sst)
+depth_resampl <- terra::resample(depth_cropped, y = average_sst_c, method = "bilinear")
+average_sst_c <- project(average_sst_c, crs(depth_resampl))
+```
+
 # Check that the CRSs match
 ```{r}
 cat("\n=== Same CRS? ===\n")
@@ -38,79 +61,7 @@ cat("west cost regions vs SST stack: ", same.crs(regions, average_sst_c), "\n")
 cat("depth vs SST stack: ", same.crs(depth_resampl, average_sst_c), "\n")
 ```
 
-# Stack the average SST rasters together, calculate the mean, convert to from Kelvin to Celcius
-```{r}
-average_sst_stack <- c(average_sst_2008, average_sst_2009, average_sst_2010, average_sst_2011, average_sst_2012)
-average_sst_stack
-mean_sst <- mean(average_sst_stack, na.rm = TRUE)
-average_sst_c <- mean_sst - 273.15
-plot(average_sst_c)
-plot(regions)
-plot(depth)
-```
-
-# Crop depth raster to the extent of the SST raster, resample to the depth raster. Confirm that CRSs match
-```{r}
-sst <- ext(-131.9848, -114.9867, 29.99305, 49.98842) 
-depth_cropped <- crop(depth, sst)
-depth_resampl <- terra::resample(depth_cropped, y = average_sst_c, method = "bilinear")
-plot(depth_resampl)
-plot(average_sst_c)
-average_sst_c <- project(average_sst_c, crs(depth_resampl))
-
-stacked_depth_sst <- c(depth_resampl, average_sst_c)
-```
-
-# Create matrix of ideal temperature, depth for oyster development. Output produces suitable zoenes for oyster development. 
-```{r}
-rcl_temp <- matrix(c(-Inf, 11, 0, 
-                 11, 30, 1, 
-                 30, Inf, 0 ), 
-                 ncol = 3, byrow = TRUE
-                 ) 
-sst_rcl <- terra::classify(average_sst_c, rcl = rcl_temp)
-
-rcl_depth <- matrix(c(-Inf, -70, 0, 
-                 -70, 0, 1,
-                 0, Inf, 0), 
-                 ncol = 3, byrow = TRUE
-                 ) 
-depth_rcl <- terra::classify(depth_resampl, rcl = rcl_dep)
-
-combined <- c(sst_rcl, depth_rcl)
-
-suitable_zones <- lapp(combined, fun = function(SST,depth) SST * depth)
-```
-
-## Rasterise the regions, suitable_zones on 'rgn_id'. Calculate ideal cells with masking, summarise and put into a tibble. 
-## Join the summarised zones with regions, create the final map. 
-```{r}
-sf::st_crs(regions) <- terra::crs(suitable_zones)
-regions_rasterise <- rasterize(regions, suitable_zones, field = 'rgn_id')
-plot(regions_rasterise)
-
-suitable_cellsize <- cellSize(suitable_zones, unit ='km', mask = TRUE)
-
-suitable_zones_mask <- mask(cellsize, suitable_zones, maskvalues = 0)
-
-plot(suitable_zones_mask)
-
-zone <- zonal(suitable_zones_mask, regions_rasterise, fun = 'sum', na.rm=TRUE)
-
-zone_tibble <- as_tibble(zone)
-
-zone_map <- left_join(regions, zone_tibble, by = 'rgn_id')
-
-tm_shape(zone_map)+
-  tm_basemap('OpenStreetMap')+
-  tm_fill(
-    fill = 'area', 
-    fill.scale = tm_scale(), 
-    fill.legend = tm_legend(title = 'Suitable Area (km)', 
-    position = tm_pos_out('right')))+
-  tm_title('Suitable Areas for Oyster Development')
-```
-
+# Build function to classify ideal regions for aquaculture
 ```{r}
 Species_Regions <- function(minimum_sst,maximum_sst,minimum_depth,maximum_depth,
 species_name) {
@@ -131,7 +82,7 @@ species_name) {
     # Apply the matrix to reclassify the raster, making all cells 0 or 1 or 2
     depth_rcl <- terra::classify(depth_resampl, rcl = rcl_depth)
 
-    combined <- c(sst_rcl, depth_rcl)
+    combined <- c(temp_rcl, depth_rcl)
 
     suitable_zones <- lapp(combined, fun = function(SST,depth) SST * depth)
 
@@ -154,16 +105,70 @@ species_name) {
     fill.scale = tm_scale(), 
     fill.legend = tm_legend(title = 'Suitable Area (km)', 
     position = tm_pos_out('right')))+
-      tm_title(species_name)
+    tm_title(species_name)+
+    tm_compass(position = c('top', 'right'))
 }
 
 ```
 
-depth range 36 - 457 m (Ref. 82649), usually 110 - 183 m (Ref. 82651).  Tropical; 6°C - 12°C
+# Run function on shrimp
 ```{r}
-Species_Regions(minimum_sst = 6, maximum_sst = 12, minimum_depth = -457, maximum_depth = -36, species_name = 'Ocean Shrimp')
+Species_Regions(minimum_sst = 6, maximum_sst = 12, minimum_depth = -457, maximum_depth = -36, species_name = 'Suitable Areas for Shrimp Development')
 ```
 
+# Run function on oysters
 ```{r}
-Species_Regions(minimum_sst = 11, maximum_sst = 30, minimum_depth = -70, maximum_depth = 0, species_name = 'Oysters')
+Species_Regions(minimum_sst = 11, maximum_sst = 30, minimum_depth = -70, maximum_depth = 0, species_name = 'Suitable Areas for Oyster Development')
+```
+
+# Components of building the function
+## Create matrix of ideal temperature, depth for oyster development. Output produces suitable zoenes for oyster development. 
+```{r}
+rcl_temp <- matrix(c(-Inf, 11, 0, 
+                 11, 30, 1, 
+                 30, Inf, 0 ), 
+                 ncol = 3, byrow = TRUE
+                 ) 
+sst_rcl <- terra::classify(average_sst_c, rcl = rcl_temp)
+
+rcl_depth <- matrix(c(-Inf, -70, 0, 
+                 -70, 0, 1,
+                 0, Inf, 0), 
+                 ncol = 3, byrow = TRUE
+                 ) 
+depth_rcl <- terra::classify(depth_resampl, rcl = rcl_depth)
+
+combined <- c(sst_rcl, depth_rcl)
+
+suitable_zones <- lapp(combined, fun = function(SST,depth) SST * depth)
+```
+
+### Rasterise the regions, suitable_zones on 'rgn_id'. Calculate ideal cells with masking, summarise and put into a tibble. 
+### Join the summarised zones with regions, create the final map. 
+```{r}
+sf::st_crs(regions) <- terra::crs(suitable_zones)
+regions_rasterise <- rasterize(regions, suitable_zones, field = 'rgn_id')
+plot(regions_rasterise)
+
+suitable_cellsize <- cellSize(suitable_zones, unit ='km', mask = TRUE)
+
+suitable_zones_mask <- mask(suitable_cellsize, suitable_zones, maskvalues = 0)
+
+plot(suitable_zones_mask)
+
+zone <- zonal(suitable_zones_mask, regions_rasterise, fun = 'sum', na.rm=TRUE)
+
+zone_tibble <- as_tibble(zone)
+
+zone_map <- left_join(regions, zone_tibble, by = 'rgn_id')
+
+tm_shape(zone_map)+
+  tm_basemap('OpenStreetMap')+
+  tm_fill(
+    fill = 'area', 
+    fill.scale = tm_scale(), 
+    fill.legend = tm_legend(title = 'Suitable Area (km)', 
+    position = tm_pos_out('right')))+
+  tm_title('Suitable Areas for Oyster Development')+
+  tm_compass(position = c('top', 'right'))
 ```
