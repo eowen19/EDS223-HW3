@@ -9,7 +9,7 @@ format:
     number-sections: true
     colorlinks: true
 ----
-
+This assignment looks at ocean depth and sea surface temperature to calculate the most appropriate zones to cultivate oysters and shrimp. The greater region of study is the Pacifc Coast of the United States, reaching from the Canadian border in the North to the Mexican border in the South. For the shrimp, the most suitable area for cultivation is off the coast of Oregon. For oysters, the most suitable area for cultivation is off the Central Coast of California. 
 
 # Load libraries
 ```{r}
